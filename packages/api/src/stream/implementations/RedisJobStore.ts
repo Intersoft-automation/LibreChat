@@ -63,25 +63,23 @@ const IDEMPOTENCY_CLAIM_LUA =
   'return redis.call("GET", KEYS[1])';
 
 /**
- * Atomic job (re)creation for the two same-slot keys: reset the steer queue
- * and write the job hash in ONE script. A `/chat/steer` request can then
- * never interleave between the queue reset and the hash write — the enqueue
- * script observes either the old hash (its status guards apply and its list
- * dies with it) or the fully initialized replacement with an empty queue, so
- * a steer accepted against one run can never be drained into another.
+ * Atomic job (re)creation for all generation-scoped same-slot keys. The prior
+ * job hash is recreated rather than overlaid so optional metadata from an old
+ * turn cannot survive merely because the replacement has not written it yet.
+ * A `/chat/steer` request cannot interleave with this reset — it observes
+ * either the old run or the fully initialized replacement.
  *
- *   KEYS: [job, steers, parkedSteers]
- *   ARGV: [ttl, hdelCount, ...hdelFields, ...hsetPairs]
+ * The event sequence is intentionally excluded because ordering spans turns
+ * that reuse a conversation stream id (see RedisEventTransport.cleanup).
+ *
+ *   KEYS: [job, steers, parkedSteers, runSteps, chunks]
+ *   ARGV: [ttl, ...hsetPairs]
  */
 const JOB_CREATE_LUA =
-  'redis.call("DEL", KEYS[2]) ' +
-  'redis.call("DEL", KEYS[3]) ' +
+  'redis.call("DEL", KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5]) ' +
   'local ttl = tonumber(ARGV[1]) ' +
-  'local hdelCount = tonumber(ARGV[2]) ' +
-  'local idx = 3 ' +
-  'for i = 1, hdelCount do redis.call("HDEL", KEYS[1], ARGV[idx]) idx = idx + 1 end ' +
   'local hset = {} ' +
-  'for i = idx, #ARGV do hset[#hset + 1] = ARGV[i] end ' +
+  'for i = 2, #ARGV do hset[#hset + 1] = ARGV[i] end ' +
   'redis.call("HSET", KEYS[1], unpack(hset)) ' +
   'redis.call("EXPIRE", KEYS[1], ttl) ' +
   'return 1';
@@ -444,50 +442,31 @@ export class RedisJobStore implements IJobStore {
     const key = KEYS.job(streamId);
     const userJobsKey = KEYS.userJobs(userId, tenantId);
 
-    // A reused streamId overlays onto any existing hash, so per-turn fields from a
-    // prior generation could survive. Drop the HITL fields so the fresh running job
-    // never exposes stale approval metadata and cleanup keys off the new createdAt
-    // rather than a leftover lastActiveAt. `agent_id` is included because
-    // updateMetadata only writes it when truthy — without clearing it here, a
-    // conversation that switches from a saved agent to an ephemeral/no-agent turn
-    // would keep the old agent_id and the resume guard would reject the valid pause.
-    const staleHitlFields: Array<keyof SerializableJobData> = [
-      'pendingAction',
-      'pendingActionId',
-      'lastActiveAt',
-      'agent_id',
-      // Same reasoning as agent_id: updateMetadata only writes isTemporary when the new
-      // metadata carries it, so a prior temporary turn's isTemporary=1 would otherwise
-      // survive and a later non-temporary resume would save its response as temporary.
-      'isTemporary',
-      // Same reasoning again: handleRunInterrupt only writes discoveredTools when THIS
-      // turn discovered ≥1 deferred tool, so a replacement turn that later pauses without
-      // its own discovery would otherwise inherit the prior run's tool names and force-load
-      // deferred tools it never discovered on resume.
-      'discoveredTools',
-      // A replacement must start with an open steer channel — the closed flag
-      // belongs to the finalized run this hash is being reused from.
-      'steersClosed',
-    ];
-
     // For cluster mode, we can't pipeline keys on different slots
     // The job key uses hash tag {streamId}, runningJobs and userJobs are on different slots
-    // Steer-queue reset + job-hash write happen ATOMICALLY (same-slot Lua):
+    // Generation-state reset + job-hash write happen ATOMICALLY (same-slot Lua):
     // a steer POST can never land between them, so a replacement can neither
     // inherit the replaced run's undrained steers nor lose/steal a steer
     // 202-accepted against either run (see JOB_CREATE_LUA).
     const hsetPairs = Object.entries(this.serializeJob(job)).flat();
     await this.redis.eval(
       JOB_CREATE_LUA,
-      3,
+      5,
       key,
       KEYS.steers(streamId),
       KEYS.parkedSteers(streamId),
+      KEYS.runSteps(streamId),
+      KEYS.chunks(streamId),
       String(this.ttl.running),
-      String(staleHitlFields.length),
-      ...staleHitlFields,
       ...hsetPairs,
     );
+    // Only discard the old process-local snapshot after the durable replacement
+    // succeeds. If Redis rejects the create, the predecessor remains authoritative
+    // and must keep its graph/content/usage for resume, abort, and billing.
+    this.localGraphCache.delete(streamId);
+    this.localContentParts.delete(streamId);
+    this.localCollectedUsageCache.delete(streamId);
+
     // Set-membership bookkeeping lives on other slots; ordering after the
     // atomic hash write is safe (scanners tolerate momentary lag).
     if (this.isCluster) {

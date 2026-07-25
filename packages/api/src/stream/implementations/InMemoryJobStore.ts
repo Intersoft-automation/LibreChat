@@ -146,6 +146,10 @@ export class InMemoryJobStore implements IJobStore {
     this.steerQueues.delete(streamId);
     this.closedSteerQueues.delete(streamId);
     this.parkedSteers.delete(streamId);
+    // Content references belong to one generation even when the conversation
+    // reuses its stream id. Drop the predecessor synchronously so resume reads
+    // cannot observe its graph, host content, or token usage through the new job.
+    this.contentState.delete(streamId);
 
     // Track job by userId (tenant-qualified when available) for efficient user-scoped queries
     const userKey = tenantId ? `${tenantId}:${userId}` : userId;

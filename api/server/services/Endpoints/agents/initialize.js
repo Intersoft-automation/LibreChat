@@ -987,6 +987,7 @@ const initializeClient = async ({ req, res, signal, endpointOption }) => {
     res,
     sender,
     contentParts,
+    stepMap,
     agentConfigs,
     eventHandlers,
     collectedUsage,

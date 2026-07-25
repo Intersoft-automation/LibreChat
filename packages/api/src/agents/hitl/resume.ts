@@ -1,9 +1,10 @@
-import { GraphEvents } from '@librechat/agents';
+import { GraphEvents, StepTypes } from '@librechat/agents';
 import type {
   ToolApprovalDecision,
   ToolApprovalDecisionMap,
   AskUserQuestionResolution,
   EventHandler,
+  RunStep,
 } from '@librechat/agents';
 import type { Agents } from 'librechat-data-provider';
 import { ASK_USER_QUESTION_TOOL_NAME } from './askUserQuestionTool';
@@ -119,6 +120,72 @@ export function findIncompleteDecisions(
       return false;
     })
     .map((r) => r.tool_call_id);
+}
+
+/**
+ * Reconcile persisted tool-step indices with the content being seeded into a
+ * rebuilt aggregator.
+ *
+ * A pause-time index is not durable identity: hosts can prepend content after
+ * the step was emitted, and persisted reconstruction can compact sparse
+ * content. Tool-call ids are stable across both operations, so use them to
+ * relocate a step without mutating the stored object.
+ */
+export function normalizeResumeRunStepIndices(
+  runSteps: readonly RunStep[],
+  seedContent: readonly { type?: string; tool_call?: { id?: string } }[] = [],
+): RunStep[] {
+  const toolCallIndices = new Map<string, number>();
+  seedContent.forEach((part, index) => {
+    const toolCallId = part?.tool_call?.id;
+    if (part?.type === 'tool_call' && typeof toolCallId === 'string') {
+      toolCallIndices.set(toolCallId, index);
+    }
+  });
+
+  return runSteps.map((runStep) => {
+    if (runStep.stepDetails?.type !== StepTypes.TOOL_CALLS) {
+      return runStep;
+    }
+    const contentIndex = runStep.stepDetails.tool_calls
+      ?.map((toolCall) => (toolCall.id ? toolCallIndices.get(toolCall.id) : undefined))
+      .find((index) => index != null);
+    return contentIndex != null && contentIndex !== runStep.index
+      ? { ...runStep, index: contentIndex }
+      : runStep;
+  });
+}
+
+/**
+ * Restore the streamed run-step sidecars that a fresh SDK Run cannot recover
+ * from the LangGraph checkpoint by itself.
+ *
+ * Human-review resume can happen in a later request or process. The checkpoint
+ * restarts directly inside ToolNode, so it does not replay ON_RUN_STEP before
+ * dispatching ON_RUN_STEP_COMPLETED. Seeding both maps lets the ToolNode emit
+ * the original step id and lets the content aggregator resolve that id back to
+ * the already-rendered tool card.
+ */
+export function hydrateResumeRunSteps(
+  runSteps: readonly RunStep[],
+  stepMap: Map<string, RunStep | undefined> | undefined,
+  graph: { toolCallStepIds?: Map<string, string> } | null | undefined,
+  seedContent: readonly { type?: string; tool_call?: { id?: string } }[] = [],
+): void {
+  for (const runStep of normalizeResumeRunStepIndices(runSteps, seedContent)) {
+    if (!runStep?.id) {
+      continue;
+    }
+    stepMap?.set(runStep.id, runStep);
+    if (runStep.stepDetails?.type !== StepTypes.TOOL_CALLS) {
+      continue;
+    }
+    for (const toolCall of runStep.stepDetails.tool_calls ?? []) {
+      if (toolCall.id) {
+        graph?.toolCallStepIds?.set(toolCall.id, runStep.id);
+      }
+    }
+  }
 }
 
 /**

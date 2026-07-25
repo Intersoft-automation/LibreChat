@@ -44,6 +44,7 @@ const {
   deleteAgentCheckpoint,
   agentRequestsAskUserQuestion,
   attachAskUserQuestionArgs,
+  hydrateResumeRunSteps,
   createContentIndexOffsetHandlers,
   createSteerIndexOffsetHandlers,
   createSteerDrainHook,
@@ -138,6 +139,7 @@ class AgentClient extends BaseClient {
     const {
       agentConfigs,
       contentParts,
+      stepMap,
       collectedUsage,
       collectedThoughtSignatures,
       artifactPromises,
@@ -167,6 +169,10 @@ class AgentClient extends BaseClient {
     this.toolInputValidationErrors = toolInputValidationErrors;
     /** @type {MessageContentComplex[]} */
     this.contentParts = contentParts;
+    /** Original run-step identity used by the content aggregator to attach
+     *  completion events to their rendered content indices.
+     *  @type {Map<string, import('@librechat/agents').RunStep | undefined> | undefined} */
+    this.stepMap = stepMap;
     /** @type {Array<UsageMetadata>} */
     this.collectedUsage = collectedUsage;
     /** Vertex Gemini 3 thought signatures captured during the run, keyed by
@@ -2013,12 +2019,14 @@ class AgentClient extends BaseClient {
    * @param {object} params
    * @param {Agents.ToolApprovalDecisionMap | { answer: string }} params.resumeValue
    * @param {Array} [params.seedContent] - content aggregated before the pause
+   * @param {Array<import('@librechat/agents').RunStep>} [params.runSteps] - run steps emitted before the pause
    * @param {AbortController} [params.abortController]
    * @param {Pick<import('@langchain/langgraph').Command, 'update' | 'goto'>} [params.commandOptions]
    */
   async resumeCompletion({
     resumeValue,
     seedContent = [],
+    runSteps = [],
     abortController = null,
     commandOptions,
     userMCPAuthMap,
@@ -2148,6 +2156,8 @@ class AgentClient extends BaseClient {
       if (!run) {
         throw new Error('Failed to create run for resume');
       }
+
+      hydrateResumeRunSteps(runSteps, this.stepMap, run.Graph, seedContent);
 
       this.run = run;
       if (this._resolveRun) {
