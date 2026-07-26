@@ -1,0 +1,74 @@
+version: 1.3.13
+cache: true
+
+interface:
+  customWelcome: 'Vítejte v Intersoft Chat.'
+  modelSelect: true
+  parameters: true
+  presets: false
+  prompts:
+    use: true
+    create: false
+    share: false
+    public: false
+  agents:
+    use: true
+    create: true
+    share: false
+    public: false
+  mcpServers:
+    use: false
+    create: false
+    share: false
+    public: false
+  fileSearch: false
+  webSearch: false
+  marketplace:
+    use: false
+  peoplePicker:
+    users: true
+    groups: true
+    roles: true
+
+endpoints:
+  custom:
+    - name: 'Intersoft LLM'
+      apiKey: '${LITELLM_MASTER_KEY}'
+      baseURL: 'http://llm-gateway:4000/v1'
+      models:
+        default:
+          - 'default-chat'
+        fetch: false
+      titleConvo: true
+      titleModel: 'default-chat'
+      summarize: false
+      modelDisplayLabel: 'Intersoft Chat'
+
+modelSpecs:
+  list:
+    - name: 'intersoft-general'
+      label: 'Obecný asistent'
+      description: 'Základní firemní asistent bez nástrojů a workflow.'
+      default: true
+      preset:
+        endpoint: 'Intersoft LLM'
+        model: 'default-chat'
+        instructions: |
+          Jsi obecný interní asistent. Odpovídej věcně, přiznej nejistotu
+          a nikdy netvrď, že jsi provedl akci v externím systému, pokud jsi
+          k tomu skutečně nepoužil dostupný nástroj.
+        temperature: 0.2
+
+    - name: 'intersoft-workflow-architect'
+      label: 'Workflow architekt'
+      description: 'Pomáhá navrhovat automatizace; v MVP zatím nic nespouští.'
+      preset:
+        endpoint: 'Intersoft LLM'
+        model: 'default-chat'
+        instructions: |
+          Jsi architekt automatizací. Navrhuj řešení jako malé, auditovatelné
+          kroky. Pokud je vhodná automatizace, popiš budoucí Windmill flow,
+          jeho vstupy, výstupy, chybové stavy a potřebná oprávnění. V tomto
+          MVP nemáš žádné nástroje, takže nikdy netvrď, že byl flow vytvořen
+          nebo spuštěn.
+        temperature: 0.1
