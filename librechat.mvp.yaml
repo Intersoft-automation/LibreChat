@@ -72,3 +72,16 @@ modelSpecs:
           MVP nemáš žádné nástroje, takže nikdy netvrď, že byl flow vytvořen
           nebo spuštěn.
         temperature: 0.1
+
+mcpSettings:
+  allowedDomains:
+    - 'mcp-gateway'
+
+mcpServers:
+  intersoft-mcp:
+    type: 'streamable-http'
+    url: 'http://mcp-gateway:9080/mcp'
+    apiKey:
+      key: '${THEFLOW_MCP_TOKEN}'
+      source: 'admin'
+      authorization_type: 'bearer'
