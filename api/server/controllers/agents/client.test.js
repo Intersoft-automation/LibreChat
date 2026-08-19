@@ -3574,7 +3574,7 @@ describe('AgentClient - finalizeSubagentContent', () => {
    *  `ON_SUBAGENT_UPDATE` handler so we exercise the same get-or-create
    *  aggregator logic the live request uses, rather than constructing
    *  aggregators directly in the test. */
-  const runSubagentEvents = async (events) => {
+  const runSubagentEvents = async (events, subagentAliasResolver) => {
     const map = new Map();
     const handlers = getDefaultHandlers({
       res: { write: jest.fn(), writableEnded: false },
@@ -3582,6 +3582,7 @@ describe('AgentClient - finalizeSubagentContent', () => {
       toolEndCallback: jest.fn(),
       collectedUsage: [],
       subagentAggregatorsByToolCallId: map,
+      subagentAliasResolver,
     });
     const handler = handlers[GraphEvents.ON_SUBAGENT_UPDATE];
     for (const e of events) {
@@ -3656,6 +3657,41 @@ describe('AgentClient - finalizeSubagentContent', () => {
     /** Buffer drained so a second call (e.g. resumable retry) doesn't
      *  double-append. */
     expect(buffer.size).toBe(0);
+  });
+
+  it('persists the assigned display name and technical run identity', async () => {
+    const subagentAliasResolver = jest.fn().mockReturnValue('Petra');
+    const buffer = await runSubagentEvents(
+      [
+        event('start', undefined),
+        event('run_step', {
+          id: 'step_alias',
+          index: 0,
+          stepDetails: { type: 'message_creation' },
+        }),
+        event('message_delta', {
+          id: 'step_alias',
+          delta: { content: [{ type: 'text', text: 'Hotovo.' }] },
+        }),
+      ],
+      subagentAliasResolver,
+    );
+    const client = makeClient(buffer);
+    client.contentParts = [
+      {
+        type: 'tool_call',
+        tool_call: { id: 'call_sub', name: Constants.SUBAGENT, args: '{}' },
+      },
+    ];
+
+    client.finalizeSubagentContent();
+
+    const toolCall = client.contentParts[0].tool_call;
+    expect(subagentAliasResolver).toHaveBeenCalledWith('child-run');
+    expect(toolCall.subagent_display_name).toBe('Petra');
+    expect(toolCall.subagent_run_id).toBe('child-run');
+    expect(toolCall.subagent_agent_id).toBe('child');
+    expect(toolCall.subagent_type).toBe('self');
   });
 
   it('ignores tool_call parts whose name is not SUBAGENT', async () => {

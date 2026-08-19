@@ -263,11 +263,7 @@ const Part = memo(function Part({
            *  runs recorded before the persistence path existed — those fall
            *  back to the Recoil atom (live session) or the raw tool output
            *  inside `SubagentCall`. */
-          const persistedContent = (
-            toolCall as unknown as {
-              subagent_content?: TMessageContentParts[];
-            }
-          ).subagent_content;
+          const persistedContent = toolCall.subagent_content as TMessageContentParts[] | undefined;
           return (
             <SubagentCall
               toolCallId={toolCall.id ?? ''}
@@ -277,6 +273,9 @@ const Part = memo(function Part({
               isSubmitting={isSubmitting}
               attachments={attachments}
               persistedContent={persistedContent}
+              persistedDisplayName={toolCall.subagent_display_name}
+              persistedAgentId={toolCall.subagent_agent_id}
+              persistedType={toolCall.subagent_type}
               hideAttachments={hideAttachments}
             />
           );

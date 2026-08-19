@@ -331,6 +331,8 @@ function feedSubagentAggregator(aggregator, event) {
  *   used to persist the breakdown only when the final call emitted usage.
  * @param {Array<TTokenUsageEvent>} [options.usageEmitSink] - Array collecting each emitted
  *   `on_token_usage` payload (incl. cost) so the response's usage rollup can be persisted.
+ * @param {import('@librechat/api').SubagentAliasResolver} [options.subagentAliasResolver]
+ *   Request-scoped allocator for human-friendly subagent run names.
  * @returns {Record<string, t.EventHandler>} The default handlers.
  * @throws {Error} If the request is not found.
  */
@@ -348,6 +350,7 @@ function getDefaultHandlers({
   toolExecuteOptions = null,
   summarizationOptions = null,
   subagentAggregatorsByToolCallId = null,
+  subagentAliasResolver = null,
   usageCost = null,
   contextUsageSink = null,
   usageEmitSink = null,
@@ -556,22 +559,32 @@ function getDefaultHandlers({
        * consistent "don't record" rule for subagent traces.
        */
       if (!visible) return;
-      if (subagentAggregatorsByToolCallId && data?.parentToolCallId) {
-        const key = data.parentToolCallId;
+      const assignedName =
+        data?.subagentDisplayName ?? subagentAliasResolver?.(data?.subagentRunId);
+      const enrichedData = assignedName ? { ...data, subagentDisplayName: assignedName } : data;
+      if (subagentAggregatorsByToolCallId && enrichedData?.parentToolCallId) {
+        const key = enrichedData.parentToolCallId;
         let aggregator = subagentAggregatorsByToolCallId.get(key);
         if (!aggregator) {
           aggregator = createContentAggregator();
           subagentAggregatorsByToolCallId.set(key, aggregator);
         }
+        aggregator.subagentMetadata = {
+          ...aggregator.subagentMetadata,
+          displayName: enrichedData.subagentDisplayName,
+          runId: enrichedData.subagentRunId,
+          agentId: enrichedData.subagentAgentId,
+          type: enrichedData.subagentType,
+        };
         try {
-          feedSubagentAggregator(aggregator, data);
+          feedSubagentAggregator(aggregator, enrichedData);
         } catch (err) {
           logger.warn(
-            `[ON_SUBAGENT_UPDATE] Failed to aggregate phase "${data?.phase}" for tool_call ${key}: ${err?.message ?? err}`,
+            `[ON_SUBAGENT_UPDATE] Failed to aggregate phase "${enrichedData?.phase}" for tool_call ${key}: ${err?.message ?? err}`,
           );
         }
       }
-      await emitForJob({ event, data });
+      await emitForJob({ event, data: enrichedData });
     },
   };
 

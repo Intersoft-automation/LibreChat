@@ -18,6 +18,7 @@ const {
   getAgentStartupTelemetry,
   buildAgentContextAttachmentsByAgentId,
   getLazySubagentConfigId,
+  createSubagentAliasResolver,
 } = require('@librechat/api');
 const {
   Permissions,
@@ -342,6 +343,9 @@ const initializeClient = async ({
    * refresh — the client-side Recoil atom is best-effort live-only.
    */
   const subagentAggregatorsByToolCallId = new Map();
+  const subagentAliasResolver = createSubagentAliasResolver(
+    appConfig?.interfaceConfig?.subagentDisplayNames,
+  );
 
   /** Backend prices each model call authoritatively (premium tiers, cache
    *  rates) and emits the cost on on_token_usage when contextCost is on, so
@@ -375,6 +379,7 @@ const initializeClient = async ({
     streamId,
     jobCreatedAt,
     subagentAggregatorsByToolCallId,
+    subagentAliasResolver,
     usageCost,
     contextUsageSink,
     usageEmitSink,

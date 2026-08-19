@@ -280,6 +280,19 @@ class AgentClient extends BaseClient {
         if (parts.length > 0) {
           toolCall.subagent_content = parts;
         }
+        const subagentMetadata = aggregator.subagentMetadata;
+        if (subagentMetadata?.displayName) {
+          toolCall.subagent_display_name = subagentMetadata.displayName;
+        }
+        if (subagentMetadata?.runId) {
+          toolCall.subagent_run_id = subagentMetadata.runId;
+        }
+        if (subagentMetadata?.agentId) {
+          toolCall.subagent_agent_id = subagentMetadata.agentId;
+        }
+        if (subagentMetadata?.type) {
+          toolCall.subagent_type = subagentMetadata.type;
+        }
       } catch (err) {
         logger.warn(
           `[AgentClient] Failed to attach subagent content for tool_call ${toolCall.id}: ${err?.message ?? err}`,

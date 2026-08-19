@@ -266,6 +266,7 @@ export default function useStepHandler({
             subagentRunId: payload.subagentRunId,
             subagentType: payload.subagentType,
             subagentAgentId: payload.subagentAgentId ?? prev?.subagentAgentId,
+            subagentDisplayName: payload.subagentDisplayName ?? prev?.subagentDisplayName,
             contentParts,
             aggregatorState,
             tickerState,

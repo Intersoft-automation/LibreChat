@@ -104,6 +104,16 @@ interface:
   # Note: This setting does not disable the Agents File Search Capability.
   # To disable the Agents Capability, see the Agents Endpoint configuration instead.
   fileSearch: true
+  # Optional human-friendly aliases for every spawned subagent run.
+  # The technical run ID is preserved for audit/debugging; the assigned alias
+  # is streamed and persisted with the conversation so it survives a refresh.
+  # subagentDisplayNames:
+  #   enabled: true
+  #   names:
+  #     - 'Petra'
+  #     - 'Jakub'
+  #     - 'Tereza'
+  #     - 'Matěj'
   # Privacy policy settings
   privacyPolicy:
     externalUrl: 'https://librechat.ai/privacy-policy'

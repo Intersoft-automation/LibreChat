@@ -1006,6 +1006,27 @@ describe('interfaceSchema', () => {
 
     expect(result.defaultPinnedTools).toBeUndefined();
   });
+
+  it('normalizes configured subagent display names', () => {
+    const result = interfaceSchema.parse({
+      subagentDisplayNames: {
+        names: [' Petra ', 'Jakub'],
+      },
+    });
+
+    expect(result.subagentDisplayNames).toEqual({
+      enabled: true,
+      names: ['Petra', 'Jakub'],
+    });
+  });
+
+  it('rejects an empty subagent display-name pool', () => {
+    const result = interfaceSchema.safeParse({
+      subagentDisplayNames: { enabled: true, names: [] },
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('summarizationTriggerSchema', () => {

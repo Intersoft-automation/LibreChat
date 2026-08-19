@@ -45,6 +45,10 @@ interface SubagentCallProps {
    *  runs recorded before the persistence path landed will not have this
    *  field; those fall back to the atom (or the raw `output` string). */
   persistedContent?: TMessageContentParts[];
+  /** Persisted run identity fields used after the live Recoil state is gone. */
+  persistedDisplayName?: string;
+  persistedAgentId?: string;
+  persistedType?: string;
   hideAttachments?: boolean;
 }
 
@@ -169,6 +173,9 @@ export default function SubagentCall({
   output,
   attachments,
   persistedContent,
+  persistedDisplayName,
+  persistedAgentId,
+  persistedType,
   hideAttachments = false,
 }: SubagentCallProps) {
   const localize = useLocalize();
@@ -177,15 +184,16 @@ export default function SubagentCall({
   const [open, setOpen] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
 
-  const subagentType = progress?.subagentType ?? extractSubagentType(args);
+  const subagentType = progress?.subagentType ?? persistedType ?? extractSubagentType(args);
   const isSelfSpawn = subagentType === 'self';
   /** Avatar lookup for the header icon. We use the child's agent id when
    *  present (explicit subagents); self-spawn falls back to the agents
    *  map being unavailable → the Users SVG. The tool UI has a similar
    *  icon-left-of-label pattern; this reuses `MessageIcon` so the agent's
    *  configured avatar lands here without a separate image pipeline. */
-  const subagentAgentId = progress?.subagentAgentId;
+  const subagentAgentId = progress?.subagentAgentId ?? persistedAgentId;
   const subagentAgent = subagentAgentId ? agentsMap?.[subagentAgentId] : undefined;
+  const subagentDisplayName = progress?.subagentDisplayName ?? persistedDisplayName;
   /**
    * Tri-state status resolution, aligned with `ToolCall.tsx`:
    *
@@ -270,11 +278,20 @@ export default function SubagentCall({
     return localize('com_ui_subagent_complete');
   };
   const headerText = getHeaderText();
-  /** Muted sub-label shown to the right of the base label: the
-   *  configured agent name for named subagents. Self-spawns omit it
-   *  (redundant — the header already says "agent") as do cases where
-   *  the name isn't resolvable (agent map miss). */
-  const subagentNameLabel = !isSelfSpawn && subagentAgent?.name ? subagentAgent.name : '';
+  /** Muted sub-label shown to the right of the base label: the run alias,
+   *  followed by the configured role name when it can be resolved. */
+  const subagentRoleLabel = !isSelfSpawn && subagentAgent?.name ? subagentAgent.name : '';
+  const subagentNameLabel = [subagentDisplayName, subagentRoleLabel].filter(Boolean).join(' · ');
+  const getDialogTitle = (): string => {
+    if (subagentNameLabel) {
+      return localize('com_ui_subagent_dialog_title', { 0: subagentNameLabel });
+    }
+    if (isSelfSpawn) {
+      return localize('com_ui_subagent_dialog_title_self');
+    }
+    return localize('com_ui_subagent_dialog_title', { 0: subagentType });
+  };
+  const dialogTitle = getDialogTitle();
 
   /**
    * Minimal `MessageContext` for the dialog's `<Part />` tree. Subagent
@@ -541,11 +558,7 @@ export default function SubagentCall({
           )}
         >
           <div className="shrink-0 px-6 pb-3 pr-14 pt-6">
-            <OGDialogTitle>
-              {isSelfSpawn
-                ? localize('com_ui_subagent_dialog_title_self')
-                : localize('com_ui_subagent_dialog_title', { 0: subagentType })}
-            </OGDialogTitle>
+            <OGDialogTitle>{dialogTitle}</OGDialogTitle>
             <OGDialogDescription className="sr-only">
               {localize('com_ui_subagent_dialog_description')}
             </OGDialogDescription>

@@ -80,6 +80,12 @@ export namespace Agents {
     id?: string;
     /** If provided, the output of the tool call */
     output?: string;
+    /** Persisted trace and identity metadata for a subagent invocation. */
+    subagent_content?: MessageContentComplex[];
+    subagent_display_name?: string;
+    subagent_run_id?: string;
+    subagent_agent_id?: string;
+    subagent_type?: string;
     /** The tool call was rejected before execution because its input failed schema validation. */
     inputValidationError?: true;
     /** Auth URL */

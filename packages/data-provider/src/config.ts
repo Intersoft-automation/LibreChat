@@ -1401,6 +1401,15 @@ const mcpServersSchema = z
 
 export type TMcpServersConfig = z.infer<typeof mcpServersSchema>;
 
+const subagentDisplayNamesSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    names: z.array(z.string().trim().min(1).max(40)).min(1).max(200),
+  })
+  .optional();
+
+export type TSubagentDisplayNamesConfig = z.infer<typeof subagentDisplayNamesSchema>;
+
 export enum RetentionMode {
   ALL = 'all',
   TEMPORARY = 'temporary',
@@ -1454,6 +1463,7 @@ export const interfaceSchema = z
     webSearch: z.boolean().optional(),
     contextUsage: z.boolean().optional(),
     contextCost: z.boolean().optional(),
+    subagentDisplayNames: subagentDisplayNamesSchema,
     currency: z
       .object({
         code: z.string(),

@@ -263,6 +263,24 @@ function openSubagentDialog(headerLabel = 'Ran agent') {
 }
 
 describe('SubagentCall — status resolution', () => {
+  it('shows the backend-assigned display name for a live subagent run', () => {
+    renderWithState({
+      toolCallId: 'call_alias_live',
+      initialProgress: 0.3,
+      isSubmitting: true,
+      progress: progressFromEvents({
+        subagentRunId: 'run_alias',
+        subagentType: 'self',
+        subagentDisplayName: 'Petra',
+        events: [],
+        status: 'start',
+      }),
+    });
+
+    expect(screen.getByText('Petra')).toBeInTheDocument();
+    expect(screen.getByTestId('dialog-title')).toHaveTextContent('"Petra" agent');
+  });
+
   it('renders "Running agent" while streaming and no terminal envelope has arrived', () => {
     renderWithState({
       toolCallId: 'call_running',
@@ -677,6 +695,24 @@ describe('SubagentCall — dialog content', () => {
     expect(screen.getByTestId('tool-call-part')).toHaveAttribute('data-name', 'calculator');
     expect(screen.getByTestId('tool-call-part')).toHaveTextContent('2436');
     expect(screen.getByTestId('text-part')).toHaveTextContent('Final persisted answer.');
+  });
+
+  it('keeps the persisted display name after a page refresh', () => {
+    render(
+      <RecoilRoot>
+        <SubagentCall
+          toolCallId="call_alias_refresh"
+          initialProgress={1}
+          isSubmitting={false}
+          persistedDisplayName="Petra"
+          persistedAgentId="agent_hr"
+          persistedType="reviewer"
+        />
+      </RecoilRoot>,
+    );
+
+    expect(screen.getByText('Petra')).toBeInTheDocument();
+    expect(screen.getByTestId('dialog-title')).toHaveTextContent('"Petra" agent');
   });
 
   it('prefers persistedContent when both are populated (sync/reconnect canonical)', () => {

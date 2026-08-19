@@ -25,6 +25,8 @@ export interface SubagentProgress {
   subagentType: string;
   /** Child agent id (for avatar / name lookup in the ticker header). */
   subagentAgentId?: string;
+  /** Human-friendly alias assigned to this child run by the backend. */
+  subagentDisplayName?: string;
   /**
    * Fully aggregated child content parts. Bounded by structure (text
    * runs + reasoning runs + tool calls), not by delta volume.

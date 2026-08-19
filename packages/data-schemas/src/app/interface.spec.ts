@@ -208,4 +208,25 @@ describe('loadDefaultInterface', () => {
 
     expect(interfaceConfig).not.toHaveProperty('defaultPinnedTools');
   });
+
+  it('passes through the global subagent display-name pool', async () => {
+    const config: Partial<TCustomConfig> = {
+      interface: {
+        subagentDisplayNames: {
+          enabled: true,
+          names: ['Petra', 'Jakub'],
+        },
+      },
+    };
+
+    const interfaceConfig = await loadDefaultInterface({
+      config,
+      configDefaults: getConfigDefaults(),
+    });
+
+    expect(interfaceConfig?.subagentDisplayNames).toEqual({
+      enabled: true,
+      names: ['Petra', 'Jakub'],
+    });
+  });
 });
