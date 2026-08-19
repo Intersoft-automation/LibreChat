@@ -14,6 +14,12 @@ jest.mock('~/hooks', () => ({
     if (key === 'com_ui_via_server') {
       return `via ${values?.[0]}`;
     }
+    if (key === 'com_ui_running_n_agents') {
+      return `Running ${values?.[0]} agents`;
+    }
+    if (key === 'com_ui_ran_n_agents') {
+      return `Ran ${values?.[0]} agents`;
+    }
     return key;
   },
   useExpandCollapse: (isExpanded: boolean) => ({
@@ -252,5 +258,47 @@ describe('ToolCallGroup image hoisting', () => {
       'data-tool-names',
       'bash_tool,bash_tool',
     );
+  });
+});
+
+describe('ToolCallGroup subagent activity', () => {
+  const renderPart = (_p: TMessageContentParts, idx: number) => (
+    <div data-testid={`agent-${idx}`} key={idx}>
+      {'agent'}
+    </div>
+  );
+
+  it('renders active subagents as one panel with completed progress', () => {
+    const { container } = renderGroup({
+      parts: [
+        { part: makePart('a1', 'done', Constants.SUBAGENT), idx: 0 },
+        { part: makePart('a2', '', Constants.SUBAGENT), idx: 1 },
+      ],
+      isSubmitting: true,
+      isLast: true,
+      lastContentIdx: 1,
+      renderPart,
+    });
+
+    expect(screen.getByRole('button', { name: 'Running 2 agents' })).toBeInTheDocument();
+    expect(screen.getByText('1/2')).toBeInTheDocument();
+    expect(screen.queryByTestId('stacked-icons')).not.toBeInTheDocument();
+    expect(container.querySelector('.rounded-xl')).toBeInTheDocument();
+  });
+
+  it('shows all subagents terminal when the parent run has ended', () => {
+    renderGroup({
+      parts: [
+        { part: makePart('a1', 'done', Constants.SUBAGENT), idx: 0 },
+        { part: makePart('a2', '', Constants.SUBAGENT), idx: 1 },
+      ],
+      isSubmitting: false,
+      isLast: true,
+      lastContentIdx: 1,
+      renderPart,
+    });
+
+    expect(screen.getByRole('button', { name: 'Ran 2 agents' })).toBeInTheDocument();
+    expect(screen.getByText('2/2')).toBeInTheDocument();
   });
 });

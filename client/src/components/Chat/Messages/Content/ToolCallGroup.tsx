@@ -132,6 +132,12 @@ export default function ToolCallGroup({
    *  terminal state ("Cancelled agent", "Agent errored"), so the group
    *  summary needs to match that tense. */
   const subagentsDone = allSubagents && (allCompleted || !isSubmitting);
+  let completedSubagentCount = 0;
+  if (allSubagents) {
+    completedSubagentCount = isSubmitting
+      ? toolMetadata.filter((meta) => meta?.hasOutput).length
+      : count;
+  }
 
   const toolNameSummary = useMemo(() => {
     const seen = new Set<string>();
@@ -239,60 +245,89 @@ export default function ToolCallGroup({
 
   return (
     <div className="mb-2 mt-1" ref={rootRef}>
-      <button
-        type="button"
-        className="inline-flex w-full items-center gap-2 py-1 text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-heavy"
-        onClick={handleToggle}
-        aria-expanded={isExpanded}
-        aria-label={groupLabel}
+      <div
+        className={cn(
+          allSubagents &&
+            'bg-surface-secondary/40 overflow-hidden rounded-xl border border-border-light shadow-sm',
+        )}
       >
-        {allSubagents ? (
-          /** Subagent groups don't have per-tool icons — StackedToolIcons
-           *  falls back to a generic wrench that reads as "tools" rather
-           *  than "agents". A single Users glyph matches the individual
-           *  subagent card header and keeps the visual language consistent. */
-          <div
+        <button
+          type="button"
+          className={cn(
+            'inline-flex w-full items-center gap-2 text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-heavy',
+            allSubagents ? 'relative px-3 py-2.5' : 'py-1',
+          )}
+          onClick={handleToggle}
+          aria-expanded={isExpanded}
+          aria-label={groupLabel}
+        >
+          {allSubagents ? (
+            /** Subagent groups don't have per-tool icons — StackedToolIcons
+             *  falls back to a generic wrench that reads as "tools" rather
+             *  than "agents". A single Users glyph matches the individual
+             *  subagent card header and keeps the visual language consistent. */
+            <div
+              className={cn(
+                'flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-tertiary text-text-secondary',
+                !allCompleted && isSubmitting && 'text-primary',
+              )}
+              aria-hidden="true"
+            >
+              <Users size={15} />
+            </div>
+          ) : (
+            <StackedToolIcons
+              toolNames={iconToolNames}
+              mcpIconMap={mcpIconMap}
+              maxIcons={4}
+              isAnimating={!allCompleted && isSubmitting}
+            />
+          )}
+          <span className="tool-status-text min-w-0 flex-1 text-left font-medium">
+            {groupLabel}
+          </span>
+          {/** Hide the tool-name summary for pure-subagent groups — every
+           *   entry deduplicates to the same "subagent" token, which adds
+           *   noise without info. Mixed groups keep the summary. */}
+          {toolNameSummary && !allSubagents && (
+            <span className="text-xs font-normal text-text-secondary">— {toolNameSummary}</span>
+          )}
+          {allSubagents && (
+            <span className="shrink-0 text-xs tabular-nums text-text-secondary" aria-hidden="true">
+              {completedSubagentCount}/{count}
+            </span>
+          )}
+          <ChevronDown
             className={cn(
-              'flex h-5 w-5 shrink-0 items-center justify-center text-text-secondary',
-              !allCompleted && isSubmitting && 'animate-pulse text-primary',
+              'size-4 shrink-0 text-text-secondary transition-transform duration-200 ease-out',
+              isExpanded && 'rotate-180',
             )}
             aria-hidden="true"
-          >
-            <Users size={14} />
-          </div>
-        ) : (
-          <StackedToolIcons
-            toolNames={iconToolNames}
-            mcpIconMap={mcpIconMap}
-            maxIcons={4}
-            isAnimating={!allCompleted && isSubmitting}
           />
-        )}
-        <span className="tool-status-text font-medium">{groupLabel}</span>
-        {/** Hide the tool-name summary for pure-subagent groups — every
-         *   entry deduplicates to the same "subagent" token, which adds
-         *   noise without info. Mixed groups keep the summary. */}
-        {toolNameSummary && !allSubagents && (
-          <span className="text-xs font-normal text-text-secondary">— {toolNameSummary}</span>
-        )}
-        <ChevronDown
-          className={cn(
-            'size-4 shrink-0 text-text-secondary transition-transform duration-200 ease-out',
-            isExpanded && 'rotate-180',
+          {allSubagents && hasActiveToolCall && (
+            <span
+              className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-surface-tertiary"
+              aria-hidden="true"
+            >
+              <span className="block h-full w-1/3 animate-pulse rounded-full bg-primary" />
+            </span>
           )}
-          aria-hidden="true"
-        />
-      </button>
-      <div style={expandStyle} onTransitionEnd={handleTransitionEnd} aria-hidden={!isExpanded}>
-        {shouldRenderBody && (
-          <div className="overflow-hidden" ref={expandRef}>
-            <div className="py-0.5 pl-4">
-              {parts.map(({ part, idx }) =>
-                renderPart(part, idx, isLast && idx === lastContentIdx, handleToolExpand),
-              )}
+        </button>
+        <div style={expandStyle} onTransitionEnd={handleTransitionEnd} aria-hidden={!isExpanded}>
+          {shouldRenderBody && (
+            <div className="overflow-hidden" ref={expandRef}>
+              <div
+                className={cn(
+                  allSubagents ? 'border-t border-border-light px-2 pb-2 pt-1' : 'py-0.5 pl-4',
+                )}
+              >
+                {parts.map(({ part, idx }) =>
+                  renderPart(part, idx, isLast && idx === lastContentIdx, handleToolExpand),
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       {groupAttachments && groupAttachments.length > 0 && (
         <AttachmentGroup attachments={groupAttachments} />

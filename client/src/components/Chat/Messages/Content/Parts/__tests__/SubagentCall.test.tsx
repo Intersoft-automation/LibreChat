@@ -100,13 +100,31 @@ jest.mock('lucide-react', () => ({
   // eslint-disable-next-line i18next/no-literal-string
   ArrowDown: () => <span>arrow-down</span>,
   // eslint-disable-next-line i18next/no-literal-string
+  Ban: () => <span>ban</span>,
+  // eslint-disable-next-line i18next/no-literal-string
+  Brain: () => <span>brain</span>,
+  // eslint-disable-next-line i18next/no-literal-string
+  Check: () => <span>check</span>,
+  // eslint-disable-next-line i18next/no-literal-string
+  CheckCircle2: () => <span>check-circle</span>,
+  // eslint-disable-next-line i18next/no-literal-string
   ChevronRight: () => <span>chevron</span>,
+  // eslint-disable-next-line i18next/no-literal-string
+  CircleX: () => <span>circle-x</span>,
+  // eslint-disable-next-line i18next/no-literal-string
+  Loader2: () => <span>loader</span>,
   // eslint-disable-next-line i18next/no-literal-string
   Maximize2: () => <span>maximize</span>,
   // eslint-disable-next-line i18next/no-literal-string
   Minimize2: () => <span>minimize</span>,
   // eslint-disable-next-line i18next/no-literal-string
+  PenLine: () => <span>pen-line</span>,
+  // eslint-disable-next-line i18next/no-literal-string
+  TriangleAlert: () => <span>alert</span>,
+  // eslint-disable-next-line i18next/no-literal-string
   Users: () => <span>users</span>,
+  // eslint-disable-next-line i18next/no-literal-string
+  Wrench: () => <span>wrench</span>,
 }));
 
 /** Stub out the agents-map provider so the header doesn't look up real
@@ -342,6 +360,28 @@ describe('SubagentCall — status resolution', () => {
      *  display name is rendered as a muted sub-label, which this test
      *  doesn't exercise (no agents-map context is seeded). */
     expect(screen.getByText('Running agent')).toBeInTheDocument();
+  });
+
+  it('shows the delegated task as a compact summary in the activity card', () => {
+    render(
+      <RecoilRoot>
+        <SubagentCall
+          toolCallId="call_summary"
+          initialProgress={0.3}
+          isSubmitting={true}
+          args={{
+            subagent_type: 'self',
+            description: 'Review the candidate\n\nagainst the required skills.',
+          }}
+        />
+      </RecoilRoot>,
+    );
+
+    const card = screen.getByRole('button', { name: 'Running agent' });
+    expect(within(card).getByText('Agent')).toBeInTheDocument();
+    expect(
+      within(card).getByText('Review the candidate against the required skills.'),
+    ).toBeInTheDocument();
   });
 });
 

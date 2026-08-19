@@ -1,7 +1,22 @@
 import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { ContentTypes, EModelEndpoint } from 'librechat-data-provider';
-import { ArrowDown, ChevronRight, Maximize2, Minimize2, Users } from 'lucide-react';
+import {
+  ArrowDown,
+  Ban,
+  Brain,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleX,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  PenLine,
+  TriangleAlert,
+  Users,
+  Wrench,
+} from 'lucide-react';
 import { OGDialog, OGDialogContent, OGDialogTitle, OGDialogDescription } from '@librechat/client';
 
 import type { TAttachment, TMessage, TMessageContentParts } from 'librechat-data-provider';
@@ -248,6 +263,7 @@ export default function SubagentCall({
   );
 
   const prompt = typeof args === 'string' ? tryPrompt(args) : extractPrompt(args);
+  const promptSummary = prompt?.replace(/\s+/g, ' ').trim();
 
   /** Base verb-only label ("Running agent" / "Ran agent"). The agent name
    *  is rendered separately as a muted sub-label so "agent" stays a
@@ -264,6 +280,22 @@ export default function SubagentCall({
    *  (redundant — the header already says "agent") as do cases where
    *  the name isn't resolvable (agent map miss). */
   const subagentNameLabel = !isSelfSpawn && subagentAgent?.name ? subagentAgent.name : '';
+  let agentDisplayName = subagentNameLabel;
+  if (!agentDisplayName) {
+    agentDisplayName =
+      !isSelfSpawn && subagentType !== 'agent'
+        ? subagentType
+        : localize('com_ui_subagent_dialog_title_self');
+  }
+
+  let statusIcon = <CheckCircle2 className="size-3.5" aria-hidden="true" />;
+  if (hasError) {
+    statusIcon = <CircleX className="size-3.5" aria-hidden="true" />;
+  } else if (cancelled) {
+    statusIcon = <Ban className="size-3.5" aria-hidden="true" />;
+  } else if (running) {
+    statusIcon = <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />;
+  }
 
   /**
    * Minimal `MessageContext` for the dialog's `<Part />` tree. Subagent
@@ -457,54 +489,88 @@ export default function SubagentCall({
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          'group my-1.5 flex w-full flex-col gap-1 rounded-lg border border-border-light bg-surface-secondary px-3 py-2 text-left transition hover:bg-surface-tertiary',
-          running && 'animate-pulse-slow',
+          'group my-1 flex w-full flex-col rounded-lg border border-border-light bg-surface-primary px-3 py-2.5 text-left shadow-sm transition-colors hover:border-border-medium hover:bg-surface-secondary',
+          running && 'border-primary/30',
         )}
         aria-label={headerText}
       >
-        <div className="flex items-center gap-2 text-sm font-medium text-text-primary">
-          <div
-            className={cn(
-              'flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full',
-              running && !subagentAgent && 'animate-pulse text-primary',
-            )}
-            aria-hidden="true"
-          >
-            {subagentAgent ? (
-              <MessageIcon
-                message={
-                  {
-                    endpoint: EModelEndpoint.agents,
-                    isCreatedByUser: false,
-                  } as TMessage
-                }
-                agent={subagentAgent}
-              />
-            ) : (
-              <Users size={14} />
-            )}
-          </div>
-          <span className="shrink-0">{headerText}</span>
-          {subagentNameLabel ? (
+        <div className="flex w-full items-start gap-2.5">
+          <div className="relative mt-0.5 shrink-0" aria-hidden="true">
+            <div className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-surface-tertiary text-text-secondary">
+              {subagentAgent ? (
+                <MessageIcon
+                  message={
+                    {
+                      endpoint: EModelEndpoint.agents,
+                      isCreatedByUser: false,
+                    } as TMessage
+                  }
+                  agent={subagentAgent}
+                />
+              ) : (
+                <Users size={14} />
+              )}
+            </div>
             <span
-              className="min-w-0 flex-1 truncate font-normal text-text-secondary"
-              title={subagentNameLabel}
+              className={cn(
+                'absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-surface-primary ring-2 ring-surface-primary',
+                running && 'text-primary',
+                !running && !cancelled && !hasError && 'text-green-600 dark:text-green-400',
+                cancelled && 'text-text-secondary',
+                hasError && 'text-text-warning',
+              )}
             >
-              {subagentNameLabel}
+              {statusIcon}
             </span>
-          ) : (
-            <span className="flex-1" />
-          )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="min-w-0 flex-1 truncate text-sm font-medium text-text-primary"
+                title={agentDisplayName}
+              >
+                {agentDisplayName}
+              </span>
+              <span
+                className={cn(
+                  'shrink-0 text-xs font-medium text-text-secondary',
+                  running && 'text-primary',
+                  hasError && 'text-text-warning',
+                )}
+              >
+                {headerText}
+              </span>
+            </div>
+            {promptSummary ? (
+              <p
+                className="mt-0.5 line-clamp-2 text-xs leading-4 text-text-secondary"
+                title={promptSummary}
+              >
+                {promptSummary}
+              </p>
+            ) : null}
+          </div>
+
           <ChevronRight
             size={14}
-            className="shrink-0 text-text-secondary transition group-hover:translate-x-0.5"
+            className="mt-1 shrink-0 text-text-secondary transition-transform group-hover:translate-x-0.5"
             aria-hidden="true"
           />
         </div>
 
-        <ul className="w-full space-y-0.5 pl-5 font-mono text-xs text-text-secondary">
+        <ul
+          className="mt-2 w-full space-y-1 border-t border-border-light pt-2 text-xs text-text-secondary"
+          aria-live="polite"
+        >
           {displayedTickerLines.length === 0 && running ? (
-            <li className="truncate opacity-70">{localize('com_ui_subagent_waiting')}</li>
+            <li className="flex items-center gap-2 truncate opacity-70">
+              <span
+                className="ml-0.5 size-1.5 shrink-0 animate-pulse rounded-full bg-primary"
+                aria-hidden="true"
+              />
+              {localize('com_ui_subagent_waiting')}
+            </li>
           ) : null}
           {displayedTickerLines.map((line, i) => (
             <TickerLineView key={`${i}-${tickerLineKey(line)}`} line={line} />
@@ -747,7 +813,12 @@ function TickerLineView({ line }: { line: SubagentTickerLine }): JSX.Element {
         ? localize('com_ui_subagent_ticker_writing')
         : localize('com_ui_subagent_ticker_reasoning');
     return (
-      <li className="flex w-full items-baseline gap-1 overflow-hidden text-text-primary">
+      <li className="flex w-full items-center gap-2 overflow-hidden text-text-secondary">
+        {line.kind === 'writing' ? (
+          <PenLine className="size-3.5 shrink-0" aria-hidden="true" />
+        ) : (
+          <Brain className="size-3.5 shrink-0" aria-hidden="true" />
+        )}
         <span className="shrink-0">{prefix}:</span>
         <span
           dir="rtl"
@@ -761,7 +832,8 @@ function TickerLineView({ line }: { line: SubagentTickerLine }): JSX.Element {
   if (line.kind === 'using_tool') {
     const prefix = localize('com_ui_subagent_ticker_using');
     return (
-      <li className="flex w-full items-baseline gap-1 overflow-hidden whitespace-nowrap">
+      <li className="flex w-full items-center gap-2 overflow-hidden whitespace-nowrap">
+        <Wrench className="size-3.5 shrink-0" aria-hidden="true" />
         <span className="shrink-0">{prefix}</span>
         <span className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
           {line.toolNames.map((name, i) => (
@@ -779,7 +851,11 @@ function TickerLineView({ line }: { line: SubagentTickerLine }): JSX.Element {
   }
   if (line.kind === 'tool_complete') {
     return (
-      <li className="flex w-full items-baseline gap-1 overflow-hidden whitespace-nowrap">
+      <li className="flex w-full items-center gap-2 overflow-hidden whitespace-nowrap">
+        <Check
+          className="size-3.5 shrink-0 text-green-600 dark:text-green-400"
+          aria-hidden="true"
+        />
         <ToolIdentifier rawName={line.toolName} localize={localize} />
         <span className="shrink-0 text-text-tertiary">→</span>
         <span
@@ -794,7 +870,8 @@ function TickerLineView({ line }: { line: SubagentTickerLine }): JSX.Element {
   /* error */
   const errorPrefix = localize('com_ui_subagent_ticker_error');
   return (
-    <li className="flex w-full items-baseline gap-1 overflow-hidden text-text-warning">
+    <li className="flex w-full items-center gap-2 overflow-hidden text-text-warning">
+      <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
       <span className="shrink-0">{errorPrefix}:</span>
       <span className="min-w-0 flex-1 truncate">{line.message ?? ''}</span>
     </li>
