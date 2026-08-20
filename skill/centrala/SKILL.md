@@ -53,8 +53,28 @@ poznat, co je co.
 | --- | --- |
 | předání k objednání, VKM versus nákup, příznak `jevkm`, kdo a kdy předal položky | [references/objednavani.md](references/objednavani.md) |
 
-Když dotaz nespadá do žádné oblasti výše, neimprovizuj nad syrovými tabulkami. Zjisti, které záznamy
-by na otázku odpověděly, a řekni, co ti chybí.
+## Když otázka vypadne mimo tabulku
+
+Většina dotazů tam zatím nebude. To není důvod odpovědět „nevím" — je to důvod se zorientovat. Máš na
+to nástroje, které prohledají a popíšou dostupné objekty; jsou omezené na schválený seznam, takže se
+jimi nikam nedostaneš, kam nemáš.
+
+1. **Najdi, kde by odpověď mohla být.** Hledej podle pojmů z dotazu nástrojem pro vyhledání objektů.
+2. **Zjisti, co ten objekt obsahuje**, než z něj začneš číst — sloupce, typy, vazby.
+3. **Přečti cílený výřez**, ne celý objekt. Omez období a entitu stejně, jako by to udělal kurátorský
+   nástroj.
+4. **Odpověz a označ cestu.** Řekni, že jde o nález z orientace, ne z ověřeného postupu, a co by ho
+   potvrdilo.
+
+Rozdíl mezi oběma cestami pojmenuj vždycky:
+
+| Cesta | Co je výsledek | Jak to podat |
+| --- | --- | --- |
+| kurátorská (tabulka výše) | zjištění | „Je to takhle, tady jsou řádky." |
+| orientační | nález k ověření | „Našel jsem tohle, ověř si to — nemám na to vyšlapaný postup." |
+
+Když ani orientace nic nenajde, teprve pak řekni, že na to data nemáš, a pojmenuj **co konkrétně** by
+bylo potřeba doplnit. Nikdy si nedomýšlej obsah objektu, který jsi nepřečetl.
 
 ## Red flags
 
