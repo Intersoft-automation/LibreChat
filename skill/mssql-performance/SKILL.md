@@ -4,7 +4,7 @@ description: Use when a Microsoft SQL Server query, procedure, view, or report i
 user-invocable: true
 disable-model-invocation: false
 always-apply: false
-version: "0.4.0"
+version: "0.4.1"
 compatibility: LibreChat SQL Programmer agent with authorized mssql-diagnostics MCP tools
 ---
 

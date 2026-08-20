@@ -24,6 +24,9 @@ Choose the identifier path before collecting evidence:
 - numbered Delphi report → `diagnose_report_regression`;
 - no stable identifier → ask for the smallest missing identifier instead of browsing global history.
 
+Translate relative time language into tool windows. In particular, "last week" means
+`recent_hours: 168` against `baseline_days: 30`; do not silently fall back to a 24-hour window.
+
 ## 2. Establish object context
 
 Collect the definition, object type, dependencies, relevant column types, constraints, indexes, and

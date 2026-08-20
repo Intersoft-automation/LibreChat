@@ -15,7 +15,7 @@ substitute a general SQL executor for it.
 | Why is this procedure behaving badly? | `diagnose_procedure` | `qualified_name` required. Bounded overview with warnings, plan IDs, and artifact IDs. Usually the correct second call. |
 | Which Query Store query matches pasted SQL? | `find_query` | Supply exact `query_id` or 16-hex-digit `query_hash`; otherwise use one to three stable `text_contains` anchors such as table names or a distinctive expression. Do not paste the whole statement. |
 | How did it behave over time? | `get_query_history` | Filter by `qualified_name`, `query_id`, or `query_hash`. `recent_hours` is compared with the preceding `baseline_days`; do not call global history after the user supplied a query. |
-| Why did numbered Delphi report N regress? | `diagnose_report_regression` | `report_number` required; optional `recent_hours` and `baseline_days`. It reads the report definition, matches its ad-hoc Query Store query, and compares the two windows without executing the report. |
+| Why did numbered Delphi report N regress? | `diagnose_report_regression` | `report_number` required; defaults compare 168 h with a 30-day baseline. Translate the user's stated window explicitly (`last week` → `recent_hours: 168`, `baseline_days: 30`). It reads the report definition, matches all ad-hoc Query Store variants sharing the selected hash, and compares the two windows without executing the report. |
 | What is inside a specific plan? | `get_plan_detail` | `plan_id` required; `view` is one of `summary`, `operators`, `warnings`, `predicates`, `xml_chunk`; `cursor` and `page_size` page the result. |
 | How do I read a large definition or plan? | `get_artifact_chunk` | `artifact_id` required; `cursor` and `max_bytes` page it. |
 
