@@ -52,13 +52,19 @@ Tvar je závazný, čísla ne. Nikdy je nepřebírej jako zjištění.
 Vytáhneš položky předané k objednání 17.8.2026 pro zakázku 81929 od odesílatele MWE, bez filtru na
 `jevkm`. Dostaneš tři řádky, všechny s `jevkm=0`.
 
-Odpověď pak zní: úkol do VKM nevznikl proto, že žádná z položek předaných ten den nebyla označená
-jako VKM — všechny tři mají `jevkm=0`, takže se založil pouze úkol na nákup. Systém se zachoval podle
-nastavení; opravit se to má na příznaku položek, ne v integraci. Následuje výpis těch tří řádků
-s hodnotami příznaku.
+Odpověď pak zní zhruba takhle:
 
-Čeho si všimni: odpověď netvrdí, že se předání nestalo, ani že něco selhalo. Kdyby mezi řádky byl
-jeden s `jevkm=1`, byl by závěr opačný — a byla by to chyba, ne vysvětlení.
+> Úkol do VKM nepřišel proto, že ani jedna z položek, které MWE ten den předal na zakázku 81929,
+> nebyla označená jako VKM. Byly tři a všechny šly jen na nákup — systém se zachoval podle toho, jak
+> jsou nastavené. Když na nich VKM být mělo, opravuje se to na těch položkách, ne v napojení systémů.
+> Můžu ukázat konkrétní položky i s tím nastavením, jestli chceš.
+
+Čeho si všimni. Ani jednou tam nepadlo `JeVKM`, jméno view ani nástroje — a přesto je odpověď
+konkrétní: kdo, kdy, kolik položek, co s tím. Kdyby si tazatel řekl o detail nebo se zeptal, jak jsi
+na to přišel, teprve pak přijde výpis těch tří řádků s hodnotami příznaku.
+
+A všimni si taky, co odpověď netvrdí: že se předání nestalo, ani že něco selhalo. Kdyby mezi řádky byl
+jeden s `JeVKM=1`, byl by závěr opačný — a byla by to chyba, kterou předáváš dál, ne vysvětlení.
 
 ## Co tahle evidence neříká
 
