@@ -18,8 +18,12 @@ předaná k objednání a nese vedle identifikace i příznaky, které rozhodly 
 `jevkm`. Ke každému dotazu tedy potřebuješ tři věci: **den předání**, **zakázku** (`cisloZakazky`)
 a **odesílatele**, tedy toho, kdo položky předal.
 
-Čti to autorizovaným nástrojem pro položky předané k objednání. Nikdy si nedopisuj vlastní SQL nad
+Čti to nástrojem, jehož jméno končí na **`polozky_k_objednani`** (klíč nese zdrojový prefix a nasazovací
+příponu, proto poznávej podle konce, ne podle přesného řetězce). Vrací i pole `souhrn` s rozpadem
+`{celkem, vkm, bez_vkm}`, takže poměr nemusíš počítat z výpisu. Nikdy si nedopisuj vlastní SQL nad
 syrovými tabulkami — směrovací logika je v příznacích na tomhle view a jinde ji nedohledáš.
+
+Parametr `je_vkm` **nech prázdný**. Je tam pro cílené výpisy, ne pro vyšetřování; viz krok 2 níže.
 
 ## Postup
 
