@@ -10,6 +10,9 @@ capturing the affected workload.
 - Weight averages by execution count and inspect tails or interval variance when the server exposes
   them. A fast frequent execution can hide a rare severe regression.
 - A new plan near the regression boundary is evidence of correlation, not proof of causation.
+- The same plan in both windows is evidence against a plan-change regression, not against a query
+  regression. A large same-plan increase in logical reads and CPU usually means a different parameter
+  or data shape is doing more work through the same operators.
 - Multiple plans can be legitimate, especially for parameter-sensitive workloads and SQL Server
   versions that support Parameter Sensitive Plan optimization.
 - Match plans to runtime statistics and waits. Do not infer runtime behavior from plan XML alone.

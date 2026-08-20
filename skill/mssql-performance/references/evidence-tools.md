@@ -10,10 +10,12 @@ substitute a general SQL executor for it.
 
 | Question | Call | Notes |
 | --- | --- | --- |
-| Which object does the user mean? | `search_database_objects` | `pattern` required; optional `object_kinds` (`table`, `view`, `procedure`, `function`) and `limit`. Several matches means ask, not guess. |
+| Which object does the user mean? | `search_database_objects` | `pattern` is a literal substring: never add `%`. Optional `match_mode` is `contains` or `exact`; optional `object_kinds` (`table`, `view`, `procedure`, `function`) and `limit`. Several matches means ask, not guess. |
 | What is this object and what does it touch? | `inspect_database_object` | `qualified_name` required. Returns definition, columns, dependencies, indexes, statistics metadata. A large definition arrives as an artifact ID. |
 | Why is this procedure behaving badly? | `diagnose_procedure` | `qualified_name` required. Bounded overview with warnings, plan IDs, and artifact IDs. Usually the correct second call. |
-| How did it behave over time? | `get_query_history` | Optional `qualified_name` and `limit`. Query Store, plus cached DMV history when available. |
+| Which Query Store query matches pasted SQL? | `find_query` | Supply exact `query_id` or 16-hex-digit `query_hash`; otherwise use one to three stable `text_contains` anchors such as table names or a distinctive expression. Do not paste the whole statement. |
+| How did it behave over time? | `get_query_history` | Filter by `qualified_name`, `query_id`, or `query_hash`. `recent_hours` is compared with the preceding `baseline_days`; do not call global history after the user supplied a query. |
+| Why did numbered Delphi report N regress? | `diagnose_report_regression` | `report_number` required; optional `recent_hours` and `baseline_days`. It reads the report definition, matches its ad-hoc Query Store query, and compares the two windows without executing the report. |
 | What is inside a specific plan? | `get_plan_detail` | `plan_id` required; `view` is one of `summary`, `operators`, `warnings`, `predicates`, `xml_chunk`; `cursor` and `page_size` page the result. |
 | How do I read a large definition or plan? | `get_artifact_chunk` | `artifact_id` required; `cursor` and `max_bytes` page it. |
 
@@ -21,6 +23,10 @@ substitute a general SQL executor for it.
 
 - Resolve the name before any call that takes `qualified_name`. Passing a guessed name produces a
   confident answer about the wrong object.
+- When the user pasted SQL, call `find_query` first, then pass the returned `query_id` to
+  `get_query_history`. Never substitute object search or unfiltered global history.
+- When the user supplied a report number, call `diagnose_report_regression` first. Inspect its
+  selected query and ambiguity warning before opening a plan.
 - For a procedure complaint, `diagnose_procedure` before `inspect_database_object`: the overview
   already carries the plan and artifact IDs that decide what to inspect next.
 - `get_query_history` before choosing a plan to open. Opening the currently cached plan first biases
@@ -62,7 +68,7 @@ The values below are illustrative. Never reuse them as observations.
    matches would mean asking which one, not picking the likelier.
 2. `diagnose_procedure(qualified_name: "dbo.usp_OrderSummary")` → overview, plan IDs `P_A` and `P_B`,
    warning that Query Store capture mode is `AUTO`, so infrequent statements may be missing.
-3. `get_query_history(qualified_name: "dbo.usp_OrderSummary", limit: 20)` → `P_A`: 812 executions,
+3. `get_query_history(qualified_name: "dbo.usp_OrderSummary", limit: 10)` → `P_A`: 812 executions,
    avg 2.1 s, ~41k logical reads, active until Monday 09:00. `P_B`: 640 executions, avg 28.7 s,
    ~2.9M logical reads, active since Monday 09:00. Now the regression is measured, not reported.
 4. `get_plan_detail(plan_id: "P_B", view: "warnings")` → hash spill to tempdb.

@@ -4,7 +4,7 @@ description: Use when a Microsoft SQL Server query, procedure, view, or report i
 user-invocable: true
 disable-model-invocation: false
 always-apply: false
-version: "0.3.0"
+version: "0.4.0"
 compatibility: LibreChat SQL Programmer agent with authorized mssql-diagnostics MCP tools
 ---
 
@@ -24,7 +24,9 @@ complete worked diagnosis.
 1. **Frame.** Establish database, object or query, symptom, affected time window, expected behavior,
    how the object is called, the latency target, and the SQL Server version or compatibility level
    when it changes the answer. Resolve an ambiguous name first; never silently pick among similarly
-   named objects or databases.
+   named objects or databases. A pasted SQL statement is a query target, not an object-name search:
+   identify it by Query Store ID, hash, or two to three stable text anchors before reading history.
+   A numbered Delphi report goes directly to `diagnose_report_regression`.
 2. **Overview.** Assemble the bounded object or procedure overview before deep inspection. Inspect
    object metadata only to resolve the target, its dependencies, or one specific uncertainty.
 3. **History before plans.** Read Query Store history before treating any single plan as
@@ -63,6 +65,7 @@ say the first.
 | "Statistics are stale, update them." | Whether an estimate is actually wrong, and where | Show the estimate/actual gap and the operator choice it changes |
 | "Let me rewrite this more cleanly." | The result contract | Prove the rewrite preserves rows, duplicates, ordering, and `NULL` behavior |
 | "Query Store returned nothing, so here is a checklist." | Why the evidence is missing | Report the gap, name what it prevents concluding, request the smallest next slice |
+| "The plan did not change, so SQL is not the cause." | Runtime variance within the same plan | Compare reads, CPU and duration across windows; large same-plan variance points toward parameter or data sensitivity |
 
 Never state a metric, plan ID, wait type, or row count that did not come from a tool result. If a
 number matters and you do not have it, say so and name the call that would produce it.

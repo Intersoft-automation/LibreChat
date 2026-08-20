@@ -17,6 +17,13 @@ Identify:
 
 Do not silently choose among similarly named objects or databases.
 
+Choose the identifier path before collecting evidence:
+
+- schema-qualified procedure/view → object diagnosis;
+- pasted SQL → `find_query` by exact ID/hash or stable text anchors, then query-specific history;
+- numbered Delphi report → `diagnose_report_regression`;
+- no stable identifier → ask for the smallest missing identifier instead of browsing global history.
+
 ## 2. Establish object context
 
 Collect the definition, object type, dependencies, relevant column types, constraints, indexes, and
@@ -57,6 +64,10 @@ Typical hypotheses include:
 
 For each leading hypothesis, record supporting evidence, contradicting evidence, and the next bounded
 observation that could disprove it.
+
+An unchanged plan does not rule out a SQL performance cause. If the same plan has materially
+different reads, CPU, or duration between windows, rank parameter/data sensitivity ahead of a plan
+regression and inspect predicates and candidate-row amplification.
 
 ## 6. Recommend and validate
 
