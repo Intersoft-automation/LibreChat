@@ -1,10 +1,15 @@
 import path from 'path';
 import { loadDeploymentSkillsFromDirectory } from '../deployment';
 
-const EXPECTED_SKILLS = ['mssql-performance', 'sql-code-review', 'sql-query-authoring'];
+const EXPECTED_SKILLS = [
+  'centrala',
+  'mssql-performance',
+  'sql-code-review',
+  'sql-query-authoring',
+];
 
 describe('checked-in deployment skill catalog', () => {
-  it('loads the SQL programmer skills with non-escalating invocation policy', async () => {
+  it('loads every deployment skill with a non-escalating invocation policy', async () => {
     const projectRoot = path.resolve(__dirname, '../../../../..');
     const registry = await loadDeploymentSkillsFromDirectory(path.join(projectRoot, 'skill'), {
       projectRoot,
@@ -25,7 +30,7 @@ describe('checked-in deployment skill catalog', () => {
     }
   });
 
-  it('bundles every referenced SQL programmer document', async () => {
+  it('bundles every referenced document', async () => {
     const projectRoot = path.resolve(__dirname, '../../../../..');
     const registry = await loadDeploymentSkillsFromDirectory(path.join(projectRoot, 'skill'), {
       projectRoot,

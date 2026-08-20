@@ -16,6 +16,7 @@ are not persisted as Skill documents in MongoDB.
 
 The checked-in catalog currently includes:
 
+- `centrala` for answering questions about what did or did not happen in the Centrála ERP;
 - `mssql-performance` for evidence-based SQL Server performance diagnosis;
 - `sql-code-review` for reviewing existing T-SQL without executing it;
 - `sql-query-authoring` for writing new schema-aware T-SQL.
